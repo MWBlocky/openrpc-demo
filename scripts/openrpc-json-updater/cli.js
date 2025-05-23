@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { readJson, buildDatedFileName } from './utils/file.utils.js';
+import { readJson } from './utils/file.utils.js';
 import { mergeDocuments } from './operations/merge.js';
 import { generateReport } from './operations/report.js';
 import { dereferenceDocument } from '@open-rpc/schema-utils-js';
@@ -45,10 +45,10 @@ function parseArgs() {
 
   if (mergeFlag) {
     const merged = mergeDocuments(originalJsonDereferenced, modifiedJsonDereferenced);
-    const outputPath = buildDatedFileName(modifiedFilePath);
-
-    fs.writeFileSync(outputPath, JSON.stringify(merged, null, 2), 'utf-8');
-    console.log(`\n Merge completed. File created: '${outputPath}'.\n`);
+    
+    // Write directly to the modified file instead of creating a new one
+    fs.writeFileSync(modifiedFilePath, JSON.stringify(merged, null, 2), 'utf-8');
+    console.log(`\n Merge completed. Updated file: '${modifiedFilePath}'.\n`);
     return;
   }
 

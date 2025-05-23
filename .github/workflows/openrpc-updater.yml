@@ -63,14 +63,14 @@ jobs:
             exit 1
           fi
 
-      - name: Create .gitignore if it doesn't exist
+      - name: Generate unique branch name
+        id: branch-name
         run: |
-          if [ ! -f "scripts/openrpc-json-updater/.gitignore" ]; then
-            echo "node_modules/" > scripts/openrpc-json-updater/.gitignore
-          elif ! grep -q "node_modules/" "scripts/openrpc-json-updater/.gitignore"; then
-            echo "node_modules/" >> scripts/openrpc-json-updater/.gitignore
-          fi
-
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          UNIQUE_BRANCH="${{ github.event.inputs.branch_name }}-${TIMESTAMP}"
+          echo "UNIQUE_BRANCH=${UNIQUE_BRANCH}" >> $GITHUB_ENV
+          echo "Generated unique branch name: ${UNIQUE_BRANCH}"
+      
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
@@ -79,17 +79,15 @@ jobs:
           title: 'Update OpenRPC JSON'
           body: |
             # OpenRPC JSON Update
-
+      
             This PR updates the OpenRPC JSON file with the latest changes.
-
+      
             ## Comparison Report
             ```
             ${{ env.REPORT_OUTPUT }}
             ```
-          branch: ${{ github.event.inputs.branch_name }}
+          branch: ${{ env.UNIQUE_BRANCH }}
           base: 'main'
           add-paths: |
-            scripts/openrpc-json-updater/${{ env.MERGE_FILE }}
             scripts/openrpc-json-updater/modified-openrpc.json
-            scripts/openrpc-json-updater/.gitignore
           delete-branch: false
