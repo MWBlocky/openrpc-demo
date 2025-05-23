@@ -43,23 +43,19 @@ jobs:
         id: merge
         run: |
           cd scripts/openrpc-json-updater
-          # Store the output of the merge command to capture the filename
+          # Execute the merge command to update the modified-openrpc.json file
           MERGE_OUTPUT=$(node cli.js --merge)
           echo "$MERGE_OUTPUT"
-
-          # Extract the filename from the output using regex
-          if [[ "$MERGE_OUTPUT" =~ Merge\ completed\.\ File\ created:\ \'([^\']+)\'\. ]]; then
-            MERGE_FILE="${BASH_REMATCH[1]}"
-            echo "Created file: $MERGE_FILE"
-
-            # Copy the merged file to modified-openrpc.json
-            cp "$MERGE_FILE" modified-openrpc.json
-
-            # Set environment variables for use in later steps
-            echo "MERGE_FILE=$MERGE_FILE" >> $GITHUB_ENV
-            echo "MERGE_FILENAME=$(basename $MERGE_FILE)" >> $GITHUB_ENV
+          
+          # Verify the merge was successful
+          if [[ "$MERGE_OUTPUT" =~ Merge\ completed\.\ Updated\ file:\ \'([^\']+)\'\. ]]; then
+            echo "Successfully updated modified-openrpc.json"
+            
+            # Set environment variables for use in later steps - now we know it's modified-openrpc.json
+            echo "MERGE_FILE=modified-openrpc.json" >> $GITHUB_ENV
+            echo "MERGE_FILENAME=modified-openrpc.json" >> $GITHUB_ENV
           else
-            echo "Failed to extract filename from merge output"
+            echo "Failed to update file. Output was: $MERGE_OUTPUT"
             exit 1
           fi
 
