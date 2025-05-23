@@ -7,6 +7,10 @@ on:
         description: 'Branch name for the PR'
         required: true
         default: 'openrpc-update'
+      base_branch:
+        description: 'Base branch to create PR against'
+        required: true
+        default: 'main'
 
 jobs:
   update-openrpc:
@@ -14,6 +18,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.base_branch }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -43,7 +50,7 @@ jobs:
 
       - name: Create branch
         run: |
-          git checkout -b ${{ github.event.inputs.branch_name }}
+          git checkout -b ${{ github.event.inputs.branch_name }} ${{ github.event.inputs.base_branch }}
 
       - name: Perform merge
         id: merge
@@ -76,6 +83,14 @@ jobs:
           git commit -m "Update OpenRPC JSON"
           git status
 
+      - name: Push branch to remote
+        run: |
+          # Push the branch to the remote repository
+          git push -u origin ${{ github.event.inputs.branch_name }} --force || {
+            echo "Failed to push to remote. This could be due to permissions or the branch already exists."
+            echo "Continuing with PR creation anyway..."
+          }
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
@@ -92,4 +107,5 @@ jobs:
             ${{ env.REPORT_OUTPUT }}
             ```
           branch: ${{ github.event.inputs.branch_name }}
-          base: main
+          base: ${{ github.event.inputs.base_branch }}
+          delete-branch: false
