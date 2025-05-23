@@ -10,10 +10,13 @@ const modifiedFilePath = './modified-openrpc.json';
 const originalJson = readJson(originalFilePath);
 const modifiedJson = readJson(modifiedFilePath);
 
-const [originalJsonDereferenced, modifiedJsonDereferenced] = await Promise.all([
-  dereferenceDocument(originalJson),
-  dereferenceDocument(modifiedJson),
-]);
+// const [originalJsonDereferenced, modifiedJsonDereferenced] = await Promise.all([
+//   dereferenceDocument(originalJson),
+//   dereferenceDocument(modifiedJson),
+// ]);
+
+const originalJsonDereferenced = originalJson;
+const modifiedJsonDereferenced = modifiedJson;
 
 function parseArgs() {
   const argv = process.argv.slice(2);
