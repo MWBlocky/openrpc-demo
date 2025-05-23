@@ -1,0 +1,8 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@open-rpc/schema-utils-js": "^2.1.2",
+    "axios": "^1.9.0",
+    "deep-diff": "^1.0.2"
+  }
+}

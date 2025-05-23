@@ -1,0 +1,95 @@
+name: OpenRPC JSON Updater
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Branch name for the PR'
+        required: true
+        default: 'openrpc-update'
+
+jobs:
+  update-openrpc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'scripts/openrpc-json-updater/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd scripts/openrpc-json-updater
+          npm install
+
+      - name: Generate comparison report
+        id: generate-report
+        run: |
+          cd scripts/openrpc-json-updater
+          REPORT_OUTPUT=$(node cli.js)
+          echo "REPORT_OUTPUT<<EOF" >> $GITHUB_ENV
+          echo "$REPORT_OUTPUT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Setup Git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+
+      - name: Create branch
+        run: |
+          git checkout -b ${{ github.event.inputs.branch_name }}
+
+      - name: Perform merge
+        id: merge
+        run: |
+          cd scripts/openrpc-json-updater
+          # Store the output of the merge command to capture the filename
+          MERGE_OUTPUT=$(node cli.js --merge)
+          echo "$MERGE_OUTPUT"
+
+          # Extract the filename from the output using regex
+          if [[ "$MERGE_OUTPUT" =~ Merge\ completed\.\ File\ created:\ \'([^\']+)\'\. ]]; then
+            MERGE_FILE="${BASH_REMATCH[1]}"
+            echo "Created file: $MERGE_FILE"
+
+            # Copy the merged file to modified-openrpc.json
+            cp "$MERGE_FILE" modified-openrpc.json
+
+            # Set environment variables for use in later steps
+            echo "MERGE_FILE=$MERGE_FILE" >> $GITHUB_ENV
+            echo "MERGE_FILENAME=$(basename $MERGE_FILE)" >> $GITHUB_ENV
+          else
+            echo "Failed to extract filename from merge output"
+            exit 1
+          fi
+
+      - name: Add and commit modified files
+        run: |
+          cd scripts/openrpc-json-updater
+          git add "${{ env.MERGE_FILE }}" modified-openrpc.json
+          git commit -m "Update OpenRPC JSON"
+          git status
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Update OpenRPC JSON
+          title: 'Update OpenRPC JSON'
+          body: |
+            # OpenRPC JSON Update
+
+            This PR updates the OpenRPC JSON file with the latest changes.
+
+            ## Comparison Report
+            ```
+            ${{ env.REPORT_OUTPUT }}
+            ```
+          branch: ${{ github.event.inputs.branch_name }}
+          base: main
