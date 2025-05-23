@@ -16,7 +16,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: 'main'
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -38,15 +37,6 @@ jobs:
           echo "REPORT_OUTPUT<<EOF" >> $GITHUB_ENV
           echo "$REPORT_OUTPUT" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-
-      - name: Setup Git
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-
-      - name: Create new branch
-        run: |
-          git checkout -b ${{ github.event.inputs.branch_name }}
 
       - name: Perform merge
         id: merge
@@ -72,20 +62,13 @@ jobs:
             exit 1
           fi
 
-      - name: Add and commit modified files
+      - name: Create .gitignore if it doesn't exist
         run: |
-          # Add the modified files from the root directory
-          git add scripts/openrpc-json-updater/"${{ env.MERGE_FILE }}" scripts/openrpc-json-updater/modified-openrpc.json
-          git commit -m "Update OpenRPC JSON"
-          git status
-
-      - name: Push branch to remote
-        run: |
-          # Push the branch to the remote repository
-          git push -u origin ${{ github.event.inputs.branch_name }} --force || {
-            echo "Failed to push to remote. This could be due to permissions or the branch already exists."
-            echo "Continuing with PR creation anyway..."
-          }
+          if [ ! -f "scripts/openrpc-json-updater/.gitignore" ]; then
+            echo "node_modules/" > scripts/openrpc-json-updater/.gitignore
+          elif ! grep -q "node_modules/" "scripts/openrpc-json-updater/.gitignore"; then
+            echo "node_modules/" >> scripts/openrpc-json-updater/.gitignore
+          fi
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
@@ -104,5 +87,8 @@ jobs:
             ```
           branch: ${{ github.event.inputs.branch_name }}
           base: 'main'
+          add-paths: |
+            scripts/openrpc-json-updater/${{ env.MERGE_FILE }}
+            scripts/openrpc-json-updater/modified-openrpc.json
+            scripts/openrpc-json-updater/.gitignore
           delete-branch: false
-          push-to-fork: ''
