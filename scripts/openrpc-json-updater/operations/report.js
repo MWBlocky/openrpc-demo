@@ -2,6 +2,13 @@ import diff from 'deep-diff';
 import { inspect } from 'node:util';
 import { getMethodMap, getDifferingTopLevelKeys } from '../utils/openrpc.utils.js';
 
+function compareIgnoringFormatting(obj1, obj2) {
+  const normalized1 = JSON.parse(JSON.stringify(obj1));
+  const normalized2 = JSON.parse(JSON.stringify(obj2));
+  
+  return diff(normalized1, normalized2);
+}
+
 export async function generateReport(
   originalJson,
   modifiedJson,
@@ -28,7 +35,7 @@ export async function generateReport(
       return;
     }
 
-    const differences = diff(originalValue, modifiedValue) || [];
+    const differences = compareIgnoringFormatting(originalValue, modifiedValue) || [];
     console.log(
       `\nDifferences for method "${methodArg}" and key "${keyArg}":\n`
     );
