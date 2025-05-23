@@ -7,10 +7,6 @@ on:
         description: 'Branch name for the PR'
         required: true
         default: 'openrpc-update'
-      base_branch:
-        description: 'Base branch to create PR against'
-        required: true
-        default: 'main'
 
 jobs:
   update-openrpc:
@@ -19,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.inputs.base_branch }}
+          ref: 'main'
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -48,9 +44,9 @@ jobs:
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'actions@github.com'
 
-      - name: Create branch
+      - name: Create new branch
         run: |
-          git checkout -b ${{ github.event.inputs.branch_name }} ${{ github.event.inputs.base_branch }}
+          git checkout -b ${{ github.event.inputs.branch_name }}
 
       - name: Perform merge
         id: merge
@@ -78,8 +74,8 @@ jobs:
 
       - name: Add and commit modified files
         run: |
-          cd scripts/openrpc-json-updater
-          git add "${{ env.MERGE_FILE }}" modified-openrpc.json
+          # Add the modified files from the root directory
+          git add scripts/openrpc-json-updater/"${{ env.MERGE_FILE }}" scripts/openrpc-json-updater/modified-openrpc.json
           git commit -m "Update OpenRPC JSON"
           git status
 
@@ -90,13 +86,6 @@ jobs:
             echo "Failed to push to remote. This could be due to permissions or the branch already exists."
             echo "Continuing with PR creation anyway..."
           }
-
-          # Create the base branch on remote if it doesn't exist
-          if ! git ls-remote --exit-code --heads origin ${{ github.event.inputs.base_branch }} > /dev/null; then
-            echo "Base branch ${{ github.event.inputs.base_branch }} doesn't exist on remote. Creating it..."
-            git checkout -b ${{ github.event.inputs.base_branch }}
-            git push -u origin ${{ github.event.inputs.base_branch }}
-          fi
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
@@ -114,6 +103,6 @@ jobs:
             ${{ env.REPORT_OUTPUT }}
             ```
           branch: ${{ github.event.inputs.branch_name }}
-          base: ${{ github.event.inputs.base_branch }}
+          base: 'main'
           delete-branch: false
           push-to-fork: ''
