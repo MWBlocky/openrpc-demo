@@ -91,6 +91,13 @@ jobs:
             echo "Continuing with PR creation anyway..."
           }
 
+          # Create the base branch on remote if it doesn't exist
+          if ! git ls-remote --exit-code --heads origin ${{ github.event.inputs.base_branch }} > /dev/null; then
+            echo "Base branch ${{ github.event.inputs.base_branch }} doesn't exist on remote. Creating it..."
+            git checkout -b ${{ github.event.inputs.base_branch }}
+            git push -u origin ${{ github.event.inputs.base_branch }}
+          fi
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
@@ -109,3 +116,4 @@ jobs:
           branch: ${{ github.event.inputs.branch_name }}
           base: ${{ github.event.inputs.base_branch }}
           delete-branch: false
+          push-to-fork: ''
